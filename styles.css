@@ -244,6 +244,58 @@ kbd { display: inline-flex; align-items: center; justify-content: center; min-wi
 .round-add { height: 31px; display: flex; align-items: center; gap: 6px; padding: 0 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); color: var(--muted); cursor: pointer; font-size: 9px; }
 .round-add:hover { color: var(--text); border-color: var(--line-strong); }
 .round-add .icon { width: 13px; }
+.bookmark-card { min-height: 560px; }
+.bookmark-head h2 { display: flex; align-items: baseline; gap: 10px; }
+.bookmark-head h2 em { color: var(--muted); font-size: 10px; font-style: normal; font-weight: 500; letter-spacing: .03em; }
+.bookmark-actions { display: flex; align-items: center; gap: 7px; }
+.compact-button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 34px; padding: 0 11px; border-radius: 10px; font-size: 10px; white-space: nowrap; cursor: pointer; }
+.compact-button .icon { width: 14px; }
+.vault-strip { display: grid; grid-template-columns: minmax(230px, 1fr) repeat(3, 112px); gap: 9px; margin: 22px 0 16px; }
+.vault-search { display: flex; align-items: center; gap: 9px; height: 49px; padding: 0 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface-2); }
+.vault-search .icon { width: 17px; color: var(--muted); }
+.vault-search input { min-width: 0; flex: 1; height: 100%; border: 0; outline: 0; background: transparent; color: var(--text); font-size: 12px; }
+.vault-search input::placeholder { color: var(--faint); }
+.vault-stat { display: grid; align-content: center; padding: 0 13px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface-2); }
+.vault-stat span { color: var(--muted); font-size: 8px; letter-spacing: .06em; }
+.vault-stat strong { margin-top: 1px; font-size: 16px; font-weight: 650; }
+.vault-stat.accent { background: rgba(var(--accent-rgb), .07); border-color: rgba(var(--accent-rgb), .14); }
+.vault-stat.accent strong { color: var(--accent); }
+.bookmark-layout { display: grid; grid-template-columns: 160px minmax(0, 1fr); min-height: 355px; border: 1px solid var(--line); border-radius: 18px; overflow: hidden; }
+.category-rail { padding: 10px; border-right: 1px solid var(--line); background: rgba(0,0,0,.045); overflow: auto; }
+.category-button { width: 100%; min-height: 35px; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 10px; border: 0; border-radius: 9px; background: transparent; color: var(--muted); cursor: pointer; font-size: 10px; text-align: left; }
+.category-button:hover { background: var(--surface-2); color: var(--text); }
+.category-button.active { background: rgba(var(--accent-rgb), .1); color: var(--text); }
+.category-button span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.category-button em { color: var(--faint); font-size: 8px; font-style: normal; }
+.bookmark-main { min-width: 0; padding: 15px; }
+.smart-launch { display: flex; align-items: center; gap: 12px; padding: 0 0 13px; border-bottom: 1px solid var(--line); margin-bottom: 5px; }
+.smart-launch > span { display: inline-flex; align-items: center; gap: 5px; flex: none; color: var(--accent); font-size: 8px; letter-spacing: .08em; }
+.smart-launch > span .icon { width: 13px; }
+.smart-launch > div { min-width: 0; display: flex; gap: 7px; overflow-x: auto; scrollbar-width: none; }
+.smart-chip { flex: none; display: inline-flex; align-items: center; gap: 6px; padding: 6px 9px; border: 1px solid var(--line); border-radius: 99px; background: var(--surface-2); color: var(--text-soft); font-size: 9px; }
+.smart-chip i { display: grid; place-items: center; width: 17px; height: 17px; border-radius: 5px; background: rgba(var(--accent-rgb), .12); color: var(--accent); font-style: normal; font-size: 8px; }
+.bookmark-results { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; min-height: 275px; align-content: start; }
+.bookmark-item { min-width: 0; display: grid; grid-template-columns: 35px minmax(0, 1fr) 18px; align-items: center; gap: 9px; min-height: 61px; padding: 8px 9px; border: 1px solid transparent; border-radius: 13px; transition: .22s var(--ease); }
+.bookmark-item:hover { background: var(--surface-2); border-color: var(--line); transform: translateY(-1px); }
+.bookmark-favicon { display: grid; place-items: center; width: 35px; height: 35px; border-radius: 10px; background: hsl(var(--favicon-hue, 72) 28% 20%); color: hsl(var(--favicon-hue, 72) 75% 78%); font-size: 10px; font-weight: 750; text-transform: uppercase; }
+html[data-theme="light"] .bookmark-favicon { background: hsl(var(--favicon-hue, 72) 45% 90%); color: hsl(var(--favicon-hue, 72) 48% 31%); }
+.bookmark-copy { min-width: 0; display: grid; }
+.bookmark-copy strong { overflow: hidden; color: var(--text-soft); font-size: 10px; font-weight: 620; text-overflow: ellipsis; white-space: nowrap; }
+.bookmark-copy small { overflow: hidden; margin-top: 2px; color: var(--faint); font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+.bookmark-item > .icon { width: 13px; color: var(--faint); opacity: 0; transition: opacity .2s; }
+.bookmark-item:hover > .icon { opacity: 1; }
+.bookmark-duplicate { box-shadow: inset 2px 0 var(--coral); }
+.vault-empty { grid-column: 1 / -1; min-height: 270px; display: grid; place-items: center; align-content: center; text-align: center; padding: 24px; }
+.vault-empty > .icon { width: 34px; height: 34px; margin-bottom: 12px; color: var(--accent); }
+.vault-empty strong { font-size: 14px; }
+.vault-empty p { max-width: 490px; margin: 7px auto 0; color: var(--muted); font-size: 10px; line-height: 1.65; }
+.vault-pagination { display: flex; justify-content: center; align-items: center; gap: 11px; padding-top: 8px; border-top: 1px solid var(--line); }
+.vault-pagination button { border: 0; background: transparent; color: var(--muted); font-size: 9px; cursor: pointer; }
+.vault-pagination button:disabled { opacity: .35; cursor: default; }
+.vault-pagination span { color: var(--faint); font-size: 8px; }
+.privacy-foot { display: flex; align-items: center; gap: 7px; margin-top: 13px; color: var(--faint); font-size: 8px; }
+.privacy-foot .icon { width: 12px; color: var(--success); }
+.privacy-foot span:last-child { margin-left: auto; }
 .ai-card { min-height: 380px; }
 .provider-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 20px; }
 .provider-card { padding: 20px; border: 1px solid var(--line); border-radius: 20px; background: linear-gradient(150deg, rgba(255,255,255,.025), transparent), var(--surface-2); }
@@ -405,6 +457,7 @@ dialog::backdrop { background: rgba(0, 0, 0, .64); backdrop-filter: blur(7px); }
   .span-6 { grid-column: span 7; }.focus-card.span-3 { grid-column: span 5; }.weather-card.span-3 { grid-column: span 4; }.launch-card.span-4 { grid-column: span 4; }.memo-card.span-5 { grid-column: span 4; }
   .radar-card.span-7, .rhythm-card.span-5 { grid-column: span 6; }
   .provider-grid { grid-template-columns: 1fr; }
+  .bookmark-results { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .link-grid { grid-template-columns: repeat(2, 1fr); }
   .calendar-day { border-radius: 7px; }
 }
@@ -423,7 +476,9 @@ dialog::backdrop { background: rgba(0, 0, 0, .64); backdrop-filter: blur(7px); }
   .main-content { padding-inline: 20px; }
   .hero { grid-template-columns: 1fr 260px; }
   .span-3, .span-4, .span-5, .span-6, .span-7, .focus-card.span-3, .weather-card.span-3, .launch-card.span-4, .memo-card.span-5, .radar-card.span-7, .rhythm-card.span-5 { grid-column: span 6; }
-  .task-card { order: 1; }.focus-card { order: 2; }.weather-card { order: 3; }.ai-card { order: 4; }.launch-card { order: 5; }.memo-card { order: 6; }.calendar-card { order: 7; }.radar-card { order: 8; }.rhythm-card { order: 9; }
+  .vault-strip { grid-template-columns: minmax(220px, 1fr) repeat(3, 82px); }
+  .bookmark-layout { grid-template-columns: 135px minmax(0, 1fr); }
+  .task-card { order: 1; }.focus-card { order: 2; }.weather-card { order: 3; }.bookmark-card { order: 4; }.ai-card { order: 5; }.launch-card { order: 6; }.memo-card { order: 7; }.calendar-card { order: 8; }.radar-card { order: 9; }.rhythm-card { order: 10; }
 }
 
 @media (max-width: 640px) {
@@ -449,6 +504,19 @@ dialog::backdrop { background: rgba(0, 0, 0, .64); backdrop-filter: blur(7px); }
   .card-foot, .source-link, .memo-tools, .calendar-foot { left: 19px; right: 19px; }
   .task-card, .focus-card, .weather-card { min-height: 385px; }
   .launch-card, .memo-card, .calendar-card { min-height: 335px; }
+  .bookmark-head { display: grid; }
+  .bookmark-actions { width: 100%; }
+  .bookmark-actions button { flex: 1; }
+  .vault-strip { grid-template-columns: repeat(3, 1fr); }
+  .vault-search { grid-column: 1 / -1; }
+  .bookmark-layout { grid-template-columns: 1fr; overflow: visible; border: 0; }
+  .category-rail { display: flex; gap: 5px; margin-bottom: 8px; padding: 0 0 7px; border: 0; overflow-x: auto; scrollbar-width: none; }
+  .category-button { width: auto; flex: none; min-height: 31px; gap: 6px; padding: 0 9px; border: 1px solid var(--line); background: var(--surface-2); }
+  .bookmark-main { padding: 0; }
+  .bookmark-results { grid-template-columns: 1fr; min-height: 270px; }
+  .bookmark-item { min-height: 57px; }
+  .privacy-foot { align-items: flex-start; }
+  .privacy-foot span:last-child { display: none; }
   .provider-card { padding: 16px; }
   .quota-visual { grid-template-columns: 90px minmax(0, 1fr); gap: 12px; }
   .quota-ring { width: 84px; height: 84px; }

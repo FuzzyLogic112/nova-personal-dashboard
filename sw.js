@@ -1,5 +1,5 @@
-const CACHE = "nova-shell-v5";
-const SHELL = ["./", "./index.html", "./styles.css", "./app.js", "./manifest.webmanifest", "./assets/icon.svg"];
+const CACHE = "nova-shell-v6";
+const SHELL = ["./", "./index.html", "./styles.css", "./app.js", "./vault.js", "./manifest.webmanifest", "./assets/icon.svg"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(SHELL)).then(() => self.skipWaiting()));

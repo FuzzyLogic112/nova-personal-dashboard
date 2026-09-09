@@ -858,7 +858,7 @@
   function setupNavigation() {
     const links = $$(".nav-item");
     const mobileLinks = $$(".mobile-dock a");
-    const sections = ["overview", "tasks", "ai-usage", "focus", "launchpad", "memo"].map((id) => document.getElementById(id));
+    const sections = ["overview", "tasks", "bookmarks", "ai-usage", "focus", "launchpad", "memo"].map((id) => document.getElementById(id));
     const observer = new IntersectionObserver((entries) => {
       const visible = entries.filter((entry) => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
       if (!visible) return;
@@ -916,6 +916,11 @@
     $("#usageProvider").addEventListener("change", fillUsageDialog);
     $("#usageClose").addEventListener("click", () => $("#usageDialog").close());
     $("#usageCancel").addEventListener("click", () => $("#usageDialog").close());
+    window.addEventListener("nova:usage-imported", () => {
+      usageState = loadUsageState();
+      renderAiUsage();
+      toast("Codex 与 Claude 额度已从私有数据包更新");
+    });
 
     $("#locateWeather").addEventListener("click", locateWeather);
     $("#globalSearch").addEventListener("submit", handleSearch);
