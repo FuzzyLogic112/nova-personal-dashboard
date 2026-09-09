@@ -8,7 +8,7 @@
   <title>NOVA · 个人工作台</title>
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./assets/icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./styles.css?v=5">
 </head>
 <body>
   <a class="skip-link" href="#main-content">跳到主要内容</a>
@@ -36,6 +36,7 @@
     <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></symbol>
     <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M4 21h16"/></symbol>
     <symbol id="i-spark" viewBox="0 0 24 24"><path d="m12 3 1.7 4.3L18 9l-4.3 1.7L12 15l-1.7-4.3L6 9l4.3-1.7ZM19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8Z"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></symbol>
     <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
   </svg>
 
@@ -58,6 +59,7 @@
       <nav class="nav-list" aria-label="主要导航">
         <a class="nav-item active" href="#overview"><svg class="icon"><use href="#i-grid"></use></svg><span>今日概览</span></a>
         <a class="nav-item" href="#tasks"><svg class="icon"><use href="#i-check"></use></svg><span>任务清单</span></a>
+        <a class="nav-item" href="#ai-usage"><svg class="icon"><use href="#i-spark"></use></svg><span>AI 额度中心</span></a>
         <a class="nav-item" href="#focus"><svg class="icon"><use href="#i-focus"></use></svg><span>专注舱</span></a>
         <a class="nav-item" href="#launchpad"><svg class="icon"><use href="#i-link"></use></svg><span>快捷入口</span></a>
         <a class="nav-item" href="#memo"><svg class="icon"><use href="#i-note"></use></svg><span>灵感便笺</span></a>
@@ -181,6 +183,26 @@
           <a class="source-link" href="https://open-meteo.com/" target="_blank" rel="noreferrer">数据源 Open‑Meteo <svg class="icon"><use href="#i-external"></use></svg></a>
         </article>
 
+        <article class="card ai-card span-12" id="ai-usage">
+          <div class="card-head">
+            <div><span class="card-kicker">AI CAPACITY CENTER</span><h2>AI 额度中心</h2></div>
+            <button class="round-add" id="usageUpdate" type="button"><svg class="icon"><use href="#i-plus"></use></svg><span>更新数据</span></button>
+          </div>
+          <div class="provider-grid">
+            <section class="provider-card codex-provider" aria-label="Codex 额度">
+              <div class="provider-top"><span class="provider-logo">C</span><div><strong>Codex</strong><small id="codexPlan">等待本地快照</small></div><span class="signal-local"><i></i>LOCAL</span></div>
+              <div class="quota-visual"><div class="quota-ring" id="codexRing"><span><strong id="codexRemaining">--</strong><small>剩余</small></span></div><div class="quota-copy"><span>本周期</span><strong id="codexUsed">尚未接入</strong><small id="codexReset">点击“更新数据”导入快照</small></div></div>
+              <div class="burn-line"><span>消耗趋势</span><svg id="codexSpark" viewBox="0 0 160 32" preserveAspectRatio="none" aria-hidden="true"><path d="M0 25L32 25L64 25L96 25L128 25L160 25"/></svg><em id="codexFreshness">等待同步</em></div>
+            </section>
+            <section class="provider-card claude-provider" aria-label="Claude 额度">
+              <div class="provider-top"><span class="provider-logo">A</span><div><strong>Claude</strong><small id="claudePlan">等待本地快照</small></div><span class="signal-local"><i></i>LOCAL</span></div>
+              <div class="quota-visual"><div class="quota-ring" id="claudeRing"><span><strong id="claudeRemaining">--</strong><small>剩余</small></span></div><div class="quota-copy"><span>本周期</span><strong id="claudeUsed">尚未接入</strong><small id="claudeReset">点击“更新数据”导入快照</small></div></div>
+              <div class="burn-line"><span>消耗趋势</span><svg id="claudeSpark" viewBox="0 0 160 32" preserveAspectRatio="none" aria-hidden="true"><path d="M0 25L32 25L64 25L96 25L128 25L160 25"/></svg><em id="claudeFreshness">等待同步</em></div>
+            </section>
+          </div>
+          <p class="usage-disclaimer"><svg class="icon"><use href="#i-lock"></use></svg><span>额度只保存在当前浏览器；不会上传 Cookie、账号凭证、API Key、提示词或对话内容。</span></p>
+        </article>
+
         <article class="card launch-card span-4" id="launchpad">
           <div class="card-head">
             <div><span class="card-kicker">LAUNCHPAD</span><h2>快捷起航</h2></div>
@@ -292,9 +314,27 @@
     </form>
   </dialog>
 
+  <dialog class="usage-dialog" id="usageDialog">
+    <form method="dialog" id="usageForm">
+      <div class="dialog-title"><div><span>PRIVATE USAGE SNAPSHOT</span><h2>更新 AI 额度</h2></div><button class="icon-button" id="usageClose" type="button" aria-label="关闭"><svg class="icon"><use href="#i-close"></use></svg></button></div>
+      <div class="settings-body usage-fields">
+        <label><span>提供方</span><select id="usageProvider"><option value="codex">Codex</option><option value="claude">Claude</option></select></label>
+        <label><span>粘贴状态文本或 JSON（可选）</span><textarea id="usagePaste" rows="4" placeholder="例如：Current week 73% used，或粘贴额度 JSON"></textarea></label>
+        <button class="parse-button" id="usageParse" type="button"><svg class="icon"><use href="#i-spark"></use></svg>端侧解析</button>
+        <div class="usage-manual-grid">
+          <label><span>已用额度 %</span><input id="usageUsedInput" type="number" min="0" max="100" step="1" placeholder="例如 69" required></label>
+          <label><span>重置时间（可选）</span><input id="usageResetInput" type="datetime-local"></label>
+        </div>
+        <label><span>计划名称（可选）</span><input id="usagePlanInput" type="text" maxlength="30" placeholder="例如 Plus · 7 天窗口"></label>
+        <p class="field-note"><svg class="icon"><use href="#i-lock"></use></svg><span>所有解析都在浏览器内完成。公开静态网页无法安全读取账号私有接口，因此不会要求你粘贴 Cookie 或 Token。</span></p>
+      </div>
+      <div class="settings-actions"><button class="button-ghost" id="usageCancel" type="button">取消</button><button class="button-primary" type="submit" value="default">保存快照</button></div>
+    </form>
+  </dialog>
+
   <input type="file" id="importFile" accept="application/json" hidden>
   <div class="toast-region" id="toastRegion" role="status" aria-live="polite"></div>
 
-  <script src="./app.js" defer></script>
+  <script src="./app.js?v=5" defer></script>
 </body>
 </html>

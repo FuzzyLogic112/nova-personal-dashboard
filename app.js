@@ -2,6 +2,7 @@
   "use strict";
 
   const STORAGE_KEY = "nova.workspace.v1";
+  const AI_USAGE_KEY = "nova.ai-usage.v1";
   const CITY_MAP = {
     shanghai: { name: "上海", lat: 31.2304, lon: 121.4737 },
     beijing: { name: "北京", lat: 39.9042, lon: 116.4074 },
@@ -55,6 +56,13 @@
     timer: { mode: "focus", duration: 1500, remaining: 1500, running: false, endAt: null }
   });
 
+  const emptyUsage = () => ({ usedPercent: null, resetAt: null, plan: null, updatedAt: null, history: [] });
+  const defaultUsageState = () => ({
+    version: 1,
+    codex: emptyUsage(),
+    claude: emptyUsage()
+  });
+
   const loadState = () => {
     const defaults = defaultState();
     try {
@@ -74,7 +82,23 @@
     }
   };
 
+  const loadUsageState = () => {
+    const defaults = defaultUsageState();
+    try {
+      const saved = JSON.parse(localStorage.getItem(AI_USAGE_KEY));
+      if (!saved || typeof saved !== "object") return defaults;
+      return {
+        version: 1,
+        codex: { ...defaults.codex, ...(saved.codex || {}), history: Array.isArray(saved.codex?.history) ? saved.codex.history.slice(-30) : [] },
+        claude: { ...defaults.claude, ...(saved.claude || {}), history: Array.isArray(saved.claude?.history) ? saved.claude.history.slice(-30) : [] }
+      };
+    } catch {
+      return defaults;
+    }
+  };
+
   let state = loadState();
+  let usageState = loadUsageState();
   let memoSaveTimer = null;
   let timerInterval = null;
   let commandIndex = 0;
@@ -82,7 +106,9 @@
   const $ = (selector, root = document) => root.querySelector(selector);
   const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
   const saveState = () => localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  const saveUsageState = () => localStorage.setItem(AI_USAGE_KEY, JSON.stringify(usageState));
   const icon = (name) => `<svg class="icon" aria-hidden="true"><use href="#i-${name}"></use></svg>`;
+  const clampPercent = (value) => Math.min(100, Math.max(0, Number(value)));
 
   function toast(message) {
     const region = $("#toastRegion");
@@ -94,6 +120,197 @@
       node.classList.add("leaving");
       node.addEventListener("animationend", () => node.remove(), { once: true });
     }, 2800);
+  }
+
+  function normalizeResetAt(value) {
+    if (value == null || value === "") return null;
+    const numeric = Number(value);
+    const date = Number.isFinite(numeric)
+      ? new Date(numeric * (numeric < 1e12 ? 1000 : 1))
+      : new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date.toISOString();
+  }
+
+  function extractUsageRecord(payload, provider) {
+    if (!payload || typeof payload !== "object") return null;
+    let record = payload[provider] || payload;
+    if (provider === "codex") {
+      record = payload.rateLimitsByLimitId?.codex?.primary
+        || payload.rateLimits?.primary
+        || payload.primary
+        || record;
+    } else if (provider === "claude") {
+      record = payload.rate_limits?.seven_day
+        || payload.rateLimits?.sevenDay
+        || record;
+    }
+    const rawUsed = record.usedPercent ?? record.used_percentage ?? record.used;
+    const rawRemaining = record.remainingPercent ?? record.remaining_percentage ?? record.remaining;
+    const usedPercent = rawUsed != null ? Number(rawUsed) : rawRemaining != null ? 100 - Number(rawRemaining) : NaN;
+    if (!Number.isFinite(usedPercent)) return null;
+    return {
+      usedPercent: clampPercent(usedPercent),
+      resetAt: normalizeResetAt(record.resetsAt ?? record.resets_at ?? record.resetAt),
+      plan: String(record.plan ?? record.planType ?? payload.rateLimitsByLimitId?.codex?.planType ?? payload.rateLimits?.planType ?? payload.plan ?? "").trim().slice(0, 30) || null,
+      updatedAt: normalizeResetAt(record.updatedAt ?? payload.updatedAt) || new Date().toISOString()
+    };
+  }
+
+  function updateUsageProvider(provider, record) {
+    if (!record || !Number.isFinite(record.usedPercent)) return false;
+    const current = usageState[provider] || emptyUsage();
+    const remaining = clampPercent(100 - record.usedPercent);
+    const history = Array.isArray(current.history) ? current.history.slice(-29) : [];
+    const last = history.at(-1);
+    if (!last || Math.abs(Number(last.remaining) - remaining) > .01 || Date.now() - new Date(last.at).getTime() > 60000) {
+      history.push({ at: record.updatedAt || new Date().toISOString(), remaining });
+    }
+    usageState[provider] = {
+      usedPercent: clampPercent(record.usedPercent),
+      resetAt: record.resetAt || null,
+      plan: record.plan || current.plan || null,
+      updatedAt: record.updatedAt || new Date().toISOString(),
+      history
+    };
+    return true;
+  }
+
+  function importUsagePayload(payload) {
+    let changed = false;
+    ["codex", "claude"].forEach((provider) => {
+      if (!payload?.[provider]) return;
+      changed = updateUsageProvider(provider, extractUsageRecord(payload[provider], provider)) || changed;
+    });
+    if (changed) saveUsageState();
+    return changed;
+  }
+
+  function consumeUsageBootstrap() {
+    const params = new URLSearchParams(location.hash.slice(1));
+    const encoded = params.get("usage");
+    if (!encoded) return false;
+    let imported = false;
+    try {
+      const base64 = encoded.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(encoded.length / 4) * 4, "=");
+      const bytes = Uint8Array.from(atob(base64), (character) => character.charCodeAt(0));
+      imported = importUsagePayload(JSON.parse(new TextDecoder().decode(bytes)));
+    } catch {
+      imported = false;
+    }
+    history.replaceState(null, "", `${location.pathname}${location.search}`);
+    return imported;
+  }
+
+  function formatUsageReset(value) {
+    if (!value) return "未提供重置时间";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "未提供重置时间";
+    const difference = date.getTime() - Date.now();
+    const when = date.toLocaleString("zh-CN", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false });
+    if (difference <= 0) return `${when} · 已到重置时间`;
+    const hours = Math.ceil(difference / 3600000);
+    const countdown = hours < 24 ? `${hours} 小时后` : `${Math.ceil(hours / 24)} 天后`;
+    return `${when} 重置 · ${countdown}`;
+  }
+
+  function formatFreshness(value) {
+    if (!value) return "等待同步";
+    const minutes = Math.max(0, Math.floor((Date.now() - new Date(value).getTime()) / 60000));
+    if (minutes < 1) return "刚刚更新";
+    if (minutes < 60) return `${minutes} 分钟前`;
+    if (minutes < 1440) return `${Math.floor(minutes / 60)} 小时前`;
+    return `${Math.floor(minutes / 1440)} 天前`;
+  }
+
+  function usageSparkPath(history, fallback = 50) {
+    const values = (history || []).map((entry) => clampPercent(entry.remaining)).filter(Number.isFinite);
+    while (values.length < 6) values.unshift(values[0] ?? fallback);
+    const sliced = values.slice(-8);
+    return sliced.map((value, index) => {
+      const x = (index / Math.max(1, sliced.length - 1)) * 160;
+      const y = 30 - value * .26;
+      return `${index ? "L" : "M"}${x.toFixed(1)} ${y.toFixed(1)}`;
+    }).join("");
+  }
+
+  function renderUsageProvider(provider) {
+    const usage = usageState[provider];
+    const prefix = provider === "codex" ? "codex" : "claude";
+    const remaining = usage.usedPercent == null ? null : clampPercent(100 - usage.usedPercent);
+    $(`#${prefix}Plan`).textContent = usage.plan || "等待本地快照";
+    $(`#${prefix}Remaining`).textContent = remaining == null ? "--" : `${Math.round(remaining)}%`;
+    $(`#${prefix}Used`).textContent = remaining == null ? "尚未接入" : `已用 ${Math.round(usage.usedPercent)}%`;
+    $(`#${prefix}Reset`).textContent = remaining == null ? "点击“更新数据”导入快照" : formatUsageReset(usage.resetAt);
+    $(`#${prefix}Freshness`).textContent = formatFreshness(usage.updatedAt);
+    $(`#${prefix}Spark path`).setAttribute("d", usageSparkPath(usage.history, remaining ?? 50));
+    const ring = $(`#${prefix}Ring`);
+    ring.style.setProperty("--quota", `${(remaining ?? 0) * 3.6}deg`);
+    ring.setAttribute("aria-label", remaining == null ? `${provider} 尚未接入` : `${provider} 剩余 ${Math.round(remaining)}%`);
+  }
+
+  function renderAiUsage() {
+    renderUsageProvider("codex");
+    renderUsageProvider("claude");
+  }
+
+  function toLocalDateTime(value) {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+    return local.toISOString().slice(0, 16);
+  }
+
+  function fillUsageDialog() {
+    const usage = usageState[$("#usageProvider").value];
+    $("#usageUsedInput").value = usage.usedPercent ?? "";
+    $("#usageResetInput").value = toLocalDateTime(usage.resetAt);
+    $("#usagePlanInput").value = usage.plan || "";
+    $("#usagePaste").value = "";
+  }
+
+  function openUsageDialog() {
+    fillUsageDialog();
+    $("#usageDialog").showModal();
+  }
+
+  function parseUsageInput() {
+    const provider = $("#usageProvider").value;
+    const text = $("#usagePaste").value.trim();
+    if (!text) return toast("请先粘贴状态文本或 JSON");
+    let record = null;
+    try {
+      record = extractUsageRecord(JSON.parse(text), provider);
+    } catch {
+      const usedMatch = text.match(/(\d+(?:\.\d+)?)\s*%\s*(?:used|已用|使用)/i)
+        || text.match(/(?:used|已用|使用)\D{0,12}(\d+(?:\.\d+)?)\s*%/i);
+      const remainingMatch = text.match(/(\d+(?:\.\d+)?)\s*%\s*(?:remaining|remain|left|剩余)/i)
+        || text.match(/(?:remaining|remain|left|剩余)\D{0,12}(\d+(?:\.\d+)?)\s*%/i);
+      const value = usedMatch ? Number(usedMatch[1]) : remainingMatch ? 100 - Number(remainingMatch[1]) : NaN;
+      if (Number.isFinite(value)) record = { usedPercent: clampPercent(value), resetAt: null, plan: null, updatedAt: new Date().toISOString() };
+    }
+    if (!record) return toast("没有识别到额度百分比，可在下方手动填写");
+    $("#usageUsedInput").value = String(Math.round(record.usedPercent));
+    if (record.resetAt) $("#usageResetInput").value = toLocalDateTime(record.resetAt);
+    if (record.plan) $("#usagePlanInput").value = record.plan;
+    toast(`${provider === "codex" ? "Codex" : "Claude"} 快照解析成功`);
+  }
+
+  function saveUsage(event) {
+    event.preventDefault();
+    const provider = $("#usageProvider").value;
+    const usedPercent = Number($("#usageUsedInput").value);
+    if (!Number.isFinite(usedPercent) || usedPercent < 0 || usedPercent > 100) return toast("请填写 0 到 100 之间的已用额度");
+    updateUsageProvider(provider, {
+      usedPercent,
+      resetAt: normalizeResetAt($("#usageResetInput").value),
+      plan: $("#usagePlanInput").value.trim().slice(0, 30) || null,
+      updatedAt: new Date().toISOString()
+    });
+    saveUsageState();
+    renderAiUsage();
+    $("#usageDialog").close();
+    toast("AI 额度快照已保存在当前浏览器");
   }
 
   function applyAppearance() {
@@ -641,7 +858,7 @@
   function setupNavigation() {
     const links = $$(".nav-item");
     const mobileLinks = $$(".mobile-dock a");
-    const sections = ["overview", "tasks", "focus", "launchpad", "memo"].map((id) => document.getElementById(id));
+    const sections = ["overview", "tasks", "ai-usage", "focus", "launchpad", "memo"].map((id) => document.getElementById(id));
     const observer = new IntersectionObserver((entries) => {
       const visible = entries.filter((entry) => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
       if (!visible) return;
@@ -693,6 +910,13 @@
       button.closest("dialog").close();
     }));
 
+    $("#usageUpdate").addEventListener("click", openUsageDialog);
+    $("#usageParse").addEventListener("click", parseUsageInput);
+    $("#usageForm").addEventListener("submit", saveUsage);
+    $("#usageProvider").addEventListener("change", fillUsageDialog);
+    $("#usageClose").addEventListener("click", () => $("#usageDialog").close());
+    $("#usageCancel").addEventListener("click", () => $("#usageDialog").close());
+
     $("#locateWeather").addEventListener("click", locateWeather);
     $("#globalSearch").addEventListener("submit", handleSearch);
     $("#commandOpen").addEventListener("click", openCommand);
@@ -726,6 +950,7 @@
   }
 
   function initializeView() {
+    const bootstrappedUsage = consumeUsageBootstrap();
     applyAppearance();
     updateProfile();
     updateClock();
@@ -733,11 +958,13 @@
     renderLinks();
     renderCalendar();
     renderRhythm();
+    renderAiUsage();
     $("#memoInput").value = state.memo || "";
     $("#memoCount").textContent = `${(state.memo || "").length} / 1200`;
     if (state.timer.running && state.timer.endAt && state.timer.endAt <= Date.now()) completeTimer();
     renderTimer();
     fetchWeather();
+    if (bootstrappedUsage) toast("Codex 与 Claude 额度已安全写入当前浏览器");
   }
 
   function init() {
@@ -745,6 +972,7 @@
     setupNavigation();
     initializeView();
     window.setInterval(updateClock, 30000);
+    window.setInterval(renderAiUsage, 60000);
     timerInterval = window.setInterval(timerTick, 250);
     if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
       navigator.serviceWorker.register("./sw.js").catch(() => {});
