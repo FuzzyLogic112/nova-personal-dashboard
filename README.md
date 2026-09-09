@@ -2,6 +2,17 @@
 
 一个本地优先、无需登录、可直接部署到 GitHub Pages 的个人工作台。
 
+[在线体验](https://fuzzylogic112.github.io/nova-personal-dashboard/) · [使用此模板创建自己的 NOVA](https://github.com/new?template_name=nova-personal-dashboard&template_owner=FuzzyLogic112) · [完整部署指南](./DEPLOY.md)
+
+## 部署自己的专属网站
+
+1. 点击“使用此模板创建自己的 NOVA”，在你的 GitHub 账号下创建新仓库；
+2. 进入新仓库的 `Settings → Pages`，将 Source 选择为 `GitHub Actions`；
+3. 在 `Actions` 页面手动运行一次 `Deploy NOVA to GitHub Pages`；
+4. 访问 `https://你的用户名.github.io/你的仓库名/`。
+
+之后每次更新 `main` 分支都会自动重新部署。NOVA 是纯静态站点，不需要数据库或常驻服务。收藏夹与 AI 额度等私密数据不会包含在模板中，只在每位使用者自己的浏览器内保存。
+
 ## 功能
 
 - 不对称 Bento 工作台：今日概览、任务、专注计时、天气、快捷入口、便笺、日历与本周节奏；
