@@ -9,6 +9,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./assets/icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./plus.css">
 </head>
 <body>
   <a class="skip-link" href="#main-content">跳到主要内容</a>
@@ -37,9 +38,17 @@
     <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M4 21h16"/></symbol>
     <symbol id="i-spark" viewBox="0 0 24 24"><path d="m12 3 1.7 4.3L18 9l-4.3 1.7L12 15l-1.7-4.3L6 9l4.3-1.7ZM19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8Z"/></symbol>
     <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+    <symbol id="i-brain" viewBox="0 0 24 24"><path d="M9.5 4.5A3.5 3.5 0 0 0 6 8v.2A3.5 3.5 0 0 0 4 14a3.5 3.5 0 0 0 5.5 4.5M14.5 4.5A3.5 3.5 0 0 1 18 8v.2A3.5 3.5 0 0 1 20 14a3.5 3.5 0 0 1-5.5 4.5M9.5 4.5V20M14.5 4.5V20M7 9h2.5M14.5 9H17M7.5 15h2M14.5 15h2"/></symbol>
+    <symbol id="i-bookmark" viewBox="0 0 24 24"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1Z"/></symbol>
+    <symbol id="i-ai" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="4"/><path d="M9 10h.01M15 10h.01M9 15c1.5 1 4.5 1 6 0M12 2v3"/></symbol>
+    <symbol id="i-habit" viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 8-8M4 4v5h5"/><path d="m9 12 2 2 4-5"/></symbol>
+    <symbol id="i-filter" viewBox="0 0 24 24"><path d="M4 5h16M7 12h10M10 19h4"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M14 7l5 5-5 5"/></symbol>
   </svg>
 
   <div class="ambient" aria-hidden="true">
+    <canvas id="motionCanvas"></canvas><span class="cursor-glow" id="cursorGlow"></span>
     <span class="orb orb-one"></span><span class="orb orb-two"></span><span class="noise"></span>
   </div>
 
@@ -57,10 +66,12 @@
 
       <nav class="nav-list" aria-label="主要导航">
         <a class="nav-item active" href="#overview"><svg class="icon"><use href="#i-grid"></use></svg><span>今日概览</span></a>
+        <a class="nav-item" href="#context"><svg class="icon"><use href="#i-brain"></use></svg><span>智能决策</span></a>
         <a class="nav-item" href="#tasks"><svg class="icon"><use href="#i-check"></use></svg><span>任务清单</span></a>
+        <a class="nav-item" href="#bookmarks"><svg class="icon"><use href="#i-bookmark"></use></svg><span>收藏知识库</span></a>
+        <a class="nav-item" href="#ai-usage"><svg class="icon"><use href="#i-ai"></use></svg><span>AI 额度中心</span></a>
+        <a class="nav-item" href="#habits"><svg class="icon"><use href="#i-habit"></use></svg><span>习惯轨迹</span></a>
         <a class="nav-item" href="#focus"><svg class="icon"><use href="#i-focus"></use></svg><span>专注舱</span></a>
-        <a class="nav-item" href="#launchpad"><svg class="icon"><use href="#i-link"></use></svg><span>快捷入口</span></a>
-        <a class="nav-item" href="#memo"><svg class="icon"><use href="#i-note"></use></svg><span>灵感便笺</span></a>
       </nav>
 
       <div class="sidebar-spacer"></div>
@@ -130,6 +141,25 @@
       </section>
 
       <section class="bento-grid" aria-label="工作台组件">
+        <article class="card context-card span-12" id="context">
+          <div class="context-copy">
+            <div class="card-head">
+              <div><span class="card-kicker">CONTEXT ENGINE · LOCAL INTELLIGENCE</span><h2>此刻，最值得做什么？</h2></div>
+              <span class="moat-badge"><svg class="icon"><use href="#i-lock"></use></svg>端侧计算</span>
+            </div>
+            <div class="context-answer">
+              <span id="contextLabel">正在读取工作上下文</span>
+              <strong id="contextAction">先完成一件能推动今天的事</strong>
+              <p id="contextReason">NOVA 会结合时间、任务、习惯、常用网站与 AI 额度，在本机生成下一步建议。</p>
+            </div>
+            <div class="context-signals" id="contextSignals"></div>
+          </div>
+          <div class="context-orbit" role="img" aria-label="上下文就绪度">
+            <div class="context-ring" id="contextRing"><span><strong id="contextScore">--</strong><small>READY</small></span></div>
+            <p><i></i><span id="contextFreshness">等待本地信号</span></p>
+          </div>
+        </article>
+
         <article class="card task-card span-6" id="tasks">
           <div class="card-head">
             <div><span class="card-kicker">DO NEXT</span><h2>今日重点</h2></div>
@@ -179,6 +209,58 @@
             <div><span>更新时间</span><strong id="weatherUpdated">--:--</strong></div>
           </div>
           <a class="source-link" href="https://open-meteo.com/" target="_blank" rel="noreferrer">数据源 Open‑Meteo <svg class="icon"><use href="#i-external"></use></svg></a>
+        </article>
+
+        <article class="card bookmark-card span-12" id="bookmarks">
+          <div class="card-head bookmark-head">
+            <div><span class="card-kicker">LOCAL KNOWLEDGE VAULT</span><h2>收藏知识库 <em id="bookmarkTotal">等待导入</em></h2></div>
+            <div class="bookmark-actions">
+              <button class="button-ghost compact-button" id="bookmarkExport" type="button"><svg class="icon"><use href="#i-download"></use></svg>导出</button>
+              <button class="button-primary compact-button" id="bookmarkImport" type="button"><svg class="icon"><use href="#i-upload"></use></svg>导入 Edge 收藏夹</button>
+            </div>
+          </div>
+          <div class="vault-strip">
+            <div class="vault-search"><svg class="icon"><use href="#i-search"></use></svg><label class="sr-only" for="bookmarkSearch">搜索收藏夹</label><input id="bookmarkSearch" type="search" placeholder="搜索标题、域名、原文件夹…" autocomplete="off"><kbd>/</kbd></div>
+            <div class="vault-stat"><span>分类</span><strong id="bookmarkCategoryCount">0</strong></div>
+            <div class="vault-stat"><span>重复候选</span><strong id="bookmarkDuplicateCount">0</strong></div>
+            <div class="vault-stat accent"><span>智能召回</span><strong id="bookmarkRecallCount">0</strong></div>
+          </div>
+          <div class="bookmark-layout">
+            <aside class="category-rail" id="bookmarkCategories" aria-label="收藏夹分类"></aside>
+            <div class="bookmark-main">
+              <div class="smart-launch" id="smartLaunch" hidden><span><svg class="icon"><use href="#i-spark"></use></svg>此刻推荐</span><div id="smartLaunchList"></div></div>
+              <div class="bookmark-results" id="bookmarkResults"><div class="vault-empty"><svg class="icon"><use href="#i-bookmark"></use></svg><strong>你的收藏夹已准备好迁入</strong><p>点击“导入 Edge 收藏夹”，选择已生成的私有数据包。网址只写入此浏览器的 IndexedDB，不会上传 GitHub。</p></div></div>
+              <div class="vault-pagination" id="bookmarkPagination" hidden><button id="bookmarkPrev" type="button">上一页</button><span id="bookmarkPage">1 / 1</span><button id="bookmarkNext" type="button">下一页</button></div>
+            </div>
+          </div>
+          <div class="privacy-foot"><svg class="icon"><use href="#i-lock"></use></svg><span>零云端：分类、去重、搜索与点击学习全部在当前设备完成。</span><span id="bookmarkStorageState">尚未载入私有数据</span></div>
+        </article>
+
+        <article class="card ai-card span-7" id="ai-usage">
+          <div class="card-head">
+            <div><span class="card-kicker">AI CAPACITY CENTER</span><h2>AI 额度中心</h2></div>
+            <button class="round-add" id="usageUpdate" type="button"><svg class="icon"><use href="#i-plus"></use></svg><span>更新数据</span></button>
+          </div>
+          <div class="provider-grid">
+            <section class="provider-card codex-provider">
+              <div class="provider-top"><span class="provider-logo">C</span><div><strong>Codex</strong><small id="codexPlan">等待本地快照</small></div><span class="signal-live"><i></i>LOCAL</span></div>
+              <div class="quota-visual"><div class="quota-ring" id="codexRing"><span><strong id="codexRemaining">--</strong><small>剩余</small></span></div><div class="quota-copy"><span>本周期</span><strong id="codexUsed">尚未接入</strong><small id="codexReset">导入私有数据包即可同步</small></div></div>
+              <div class="burn-line"><span>消耗趋势</span><svg id="codexSpark" viewBox="0 0 160 32" preserveAspectRatio="none"><path d="M0 25L32 23L64 24L96 20L128 21L160 18"/></svg><em id="codexForecast">--</em></div>
+            </section>
+            <section class="provider-card claude-provider">
+              <div class="provider-top"><span class="provider-logo">A</span><div><strong>Claude</strong><small id="claudePlan">本地日志统计</small></div><span class="signal-live"><i></i>LOCAL</span></div>
+              <div class="quota-visual"><div class="quota-ring" id="claudeRing"><span><strong id="claudeRemaining">--</strong><small>剩余</small></span></div><div class="quota-copy"><span>最近 7 天</span><strong id="claudeTokens">尚未接入</strong><small id="claudeCalls">不会读取对话内容</small></div></div>
+              <div class="burn-line"><span>消耗趋势</span><svg id="claudeSpark" viewBox="0 0 160 32" preserveAspectRatio="none"><path d="M0 24L32 22L64 25L96 17L128 20L160 16"/></svg><em id="claudeForecast">--</em></div>
+            </section>
+          </div>
+          <p class="usage-disclaimer"><svg class="icon"><use href="#i-lock"></use></svg><span>只显示你主动导入的汇总值；不收集 Cookie、账号凭证、API Key 或提示词。</span></p>
+        </article>
+
+        <article class="card habit-card span-5" id="habits">
+          <div class="card-head"><div><span class="card-kicker">CONSISTENCY SYSTEM</span><h2>习惯轨迹</h2></div><button class="round-add" id="habitAdd" type="button"><svg class="icon"><use href="#i-plus"></use></svg><span>新增</span></button></div>
+          <div class="habit-overview"><div><span>连续行动</span><strong id="habitBestStreak">0 <small>天</small></strong></div><div><span>今日完成</span><strong id="habitToday">0 / 3</strong></div></div>
+          <div class="habit-list" id="habitList"></div>
+          <div class="heatmap-wrap"><span>最近 28 天</span><div class="habit-heatmap" id="habitHeatmap" role="img" aria-label="最近 28 天习惯完成热力图"></div></div>
         </article>
 
         <article class="card launch-card span-4" id="launchpad">
@@ -244,7 +326,7 @@
     <a class="active" href="#overview"><svg class="icon"><use href="#i-grid"></use></svg><span>概览</span></a>
     <a href="#tasks"><svg class="icon"><use href="#i-check"></use></svg><span>任务</span></a>
     <button id="dockFocus" type="button"><span class="dock-main"><svg class="icon"><use href="#i-focus"></use></svg></span><small>专注</small></button>
-    <a href="#launchpad"><svg class="icon"><use href="#i-link"></use></svg><span>入口</span></a>
+    <a href="#bookmarks"><svg class="icon"><use href="#i-bookmark"></use></svg><span>收藏</span></a>
     <button id="dockSettings" type="button"><svg class="icon"><use href="#i-settings"></use></svg><span>设置</span></button>
   </nav>
 
@@ -292,9 +374,28 @@
     </form>
   </dialog>
 
+  <dialog class="usage-dialog" id="usageDialog">
+    <form method="dialog" id="usageForm">
+      <div class="dialog-title"><div><span>PRIVATE USAGE SNAPSHOT</span><h2>更新 AI 额度</h2></div><button class="icon-button" id="usageClose" type="button" aria-label="关闭"><svg class="icon"><use href="#i-close"></use></svg></button></div>
+      <div class="settings-body usage-fields">
+        <label><span>提供方</span><select id="usageProvider"><option value="codex">Codex</option><option value="claude">Claude</option></select></label>
+        <label><span>粘贴状态文本或 JSON（可选）</span><textarea id="usagePaste" rows="5" placeholder="例如：65% remaining，或粘贴本地查询得到的 JSON"></textarea></label>
+        <button class="parse-button" id="usageParse" type="button"><svg class="icon"><use href="#i-spark"></use></svg>端侧解析</button>
+        <div class="usage-manual-grid">
+          <label><span>剩余额度 %</span><input id="usageRemainingInput" type="number" min="0" max="100" step="1" placeholder="例如 65"></label>
+          <label><span>重置时间（可选）</span><input id="usageResetInput" type="datetime-local"></label>
+        </div>
+        <p class="field-note"><svg class="icon"><use href="#i-lock"></use></svg>数据只保存在浏览器本地。订阅计划未提供稳定接口时，保留手动更新可避免索取或暴露凭证。</p>
+      </div>
+      <div class="settings-actions"><button class="button-ghost" id="usageCancel" type="button">取消</button><button class="button-primary" type="submit" value="default">保存快照</button></div>
+    </form>
+  </dialog>
+
   <input type="file" id="importFile" accept="application/json" hidden>
+  <input type="file" id="privatePackFile" accept="application/json,text/html" hidden>
   <div class="toast-region" id="toastRegion" role="status" aria-live="polite"></div>
 
   <script src="./app.js" defer></script>
+  <script src="./nova-plus.js" defer></script>
 </body>
 </html>

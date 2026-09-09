@@ -641,7 +641,7 @@
   function setupNavigation() {
     const links = $$(".nav-item");
     const mobileLinks = $$(".mobile-dock a");
-    const sections = ["overview", "tasks", "focus", "launchpad", "memo"].map((id) => document.getElementById(id));
+    const sections = ["overview", "context", "tasks", "bookmarks", "ai-usage", "habits", "focus", "launchpad", "memo"].map((id) => document.getElementById(id));
     const observer = new IntersectionObserver((entries) => {
       const visible = entries.filter((entry) => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
       if (!visible) return;
