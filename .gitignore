@@ -1,5 +1,3 @@
 qa-*.png
 .DS_Store
 Thumbs.db
-private-import/
-*.private.json
