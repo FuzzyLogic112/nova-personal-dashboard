@@ -1,3 +1,5 @@
+<img src="assets/icon.svg" alt="NOVA 图标" width="64">
+
 # NOVA 个人工作台
 
 一个本地优先、无需登录、可直接部署到 GitHub Pages 的个人工作台。
