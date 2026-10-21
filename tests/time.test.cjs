@@ -7,7 +7,7 @@ const time = require('../time.js');
 
 test('Beijing display and date inputs agree on an instant regardless of the host zone', () => {
   const instant = '2026-10-21T07:44:00.000Z';
-  assert.equal(time.format(instant, { hour: '2-digit', minute: '2-digit' }), '15:44');
+  assert.equal(time.format(instant, 'clock'), '15:44');
   assert.equal(time.dateKey(instant), '2026-10-21');
   assert.equal(time.toInput(instant), '2026-10-21T15:44');
   assert.equal(time.fromInput('2026-10-21T15:44'), instant);
@@ -15,13 +15,17 @@ test('Beijing display and date inputs agree on an instant regardless of the host
   assert.equal(time.fromInput('2026-10-21T15:44Z'), null);
 });
 
-test('browser overrides of Date locale methods cannot override the chosen display zone', () => {
+test('later browser overrides of Date and Intl cannot change the captured display zone', () => {
   const original = Date.prototype.toLocaleString;
+  const originalFormatter = Intl.DateTimeFormat;
   try {
     Date.prototype.toLocaleString = () => '07:44';
-    assert.equal(time.format('2026-10-21T07:44:00Z', { hour: '2-digit', minute: '2-digit' }), '15:44');
+    Intl.DateTimeFormat = function (locale, options) {
+      return new originalFormatter(locale, { ...options, timeZone: 'UTC' });
+    };
+    assert.equal(time.format('2026-10-21T07:44:00Z', 'clock'), '15:44');
     assert.ok(time.format('2026-10-21T07:44:00Z').includes('15:44:00'));
-  } finally { Date.prototype.toLocaleString = original; }
+  } finally { Date.prototype.toLocaleString = original; Intl.DateTimeFormat = originalFormatter; }
 });
 
 function clockPage(instant) {

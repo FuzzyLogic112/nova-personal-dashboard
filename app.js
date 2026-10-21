@@ -202,7 +202,7 @@
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return "未提供重置时间";
     const difference = date.getTime() - Date.now();
-    const when = NovaTime.format(date, { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
+    const when = NovaTime.format(date, "short");
     if (difference <= 0) return `${when} · 已到重置时间`;
     const hours = Math.ceil(difference / 3600000);
     const countdown = hours < 24 ? `${hours} 小时后` : `${Math.ceil(hours / 24)} 天后`;
@@ -326,7 +326,7 @@
     const { year, month, day, weekday, hour, minute, second } = NovaTime.parts(now);
     const weekdays = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"];
     $("#topDate").textContent = `${String(month).padStart(2, "0")}月${String(day).padStart(2, "0")}日 · ${weekdays[weekday]}`;
-    $("#topTime").textContent = NovaTime.format(now, { hour: "2-digit", minute: "2-digit" });
+    $("#topTime").textContent = NovaTime.format(now, "clock");
     $("#greeting").textContent = hour < 6 ? "夜深了" : hour < 11 ? "上午好" : hour < 14 ? "中午好" : hour < 18 ? "下午好" : "晚上好";
 
     const start = Date.UTC(year, 0, 1);

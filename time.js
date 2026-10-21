@@ -22,11 +22,14 @@
     const { year, month, day } = parts(value);
     return `${year}-${pad(month)}-${pad(day)}`;
   }
-  function format(value, options) {
-    const fields = options || { year: "numeric", month: "numeric", day: "numeric",
-      hour: "2-digit", minute: "2-digit", second: "2-digit" };
-    // Use the explicit formatter; browser add-ons can override Date.toLocaleString.
-    return new Intl.DateTimeFormat("zh-CN", { ...fields, timeZone: zone, hourCycle: "h23" }).format(new Date(value));
+  function format(value, style = "timestamp") {
+    // Share the same captured formatter as the calendar and greeting. Later browser
+    // overrides of Date/Intl formatting must not make the clock disagree with them.
+    const { year, month, day, hour, minute, second } = parts(value);
+    const clock = `${pad(hour)}:${pad(minute)}`;
+    if (style === "clock") return clock;
+    if (style === "short") return `${month}月${day}日 ${clock}`;
+    return `${year}/${month}/${day} ${clock}:${pad(second)}`;
   }
   function toInput(value) {
     if (!value || !Number.isFinite(new Date(value).getTime())) return "";
