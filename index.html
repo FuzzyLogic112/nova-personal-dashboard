@@ -365,7 +365,8 @@
   </dialog>
 
   <input type="file" id="importFile" accept="application/json" hidden>
-  <input type="file" id="privatePackFile" accept="application/json,text/html" hidden>
+  <!-- Mobile file providers may report JSON with an unexpected MIME type; vault.js validates file contents. -->
+  <input type="file" id="privatePackFile" hidden>
   <div class="toast-region" id="toastRegion" role="status" aria-live="polite"></div>
 
   <script src="./time.js?v=11" defer></script>
