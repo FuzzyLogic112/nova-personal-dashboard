@@ -50,6 +50,16 @@ html[data-accent="coral"] { --accent: #ff9c84; --accent-rgb: 255, 156, 132; --ac
 
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
+.bookmark-sync { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; margin:0 0 20px; padding:17px 18px; background:rgba(var(--accent-rgb),.04); border:1px solid var(--line-strong); border-radius:var(--radius-md); }
+.bookmark-sync-copy { flex:1 1 260px; min-width:0; }
+.bookmark-sync-copy strong { display:flex; align-items:center; gap:8px; font-size:12px; }
+.bookmark-sync-copy strong::before { content:""; width:7px; height:7px; border-radius:50%; background:var(--muted); flex:none; }
+.bookmark-sync-copy strong[data-state="connected"]::before { background:var(--accent); box-shadow:0 0 0 4px rgba(var(--accent-rgb),.1); }
+.bookmark-sync-copy strong[data-state="error"]::before { background:var(--danger); }
+.bookmark-sync-copy p { margin:7px 0 0; font-size:11px; color:var(--muted); line-height:1.7; overflow-wrap:anywhere; }
+.bookmark-sync-actions { display:flex; flex-wrap:wrap; gap:7px; align-items:center; }
+.bookmark-sync-actions .compact-button { font-size:11px; }
+.bookmark-actions button:disabled,.bookmark-sync-actions button:disabled { opacity:.45; cursor:not-allowed; }
 html { scroll-behavior: smooth; }
 body {
   margin: 0;

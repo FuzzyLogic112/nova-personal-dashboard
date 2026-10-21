@@ -27,10 +27,16 @@ jobs:
       - name: Configure Pages
         uses: actions/configure-pages@v6
 
+      - name: Test bookmark sync
+        run: npm ci && npm test
+
+      - name: Package site and extension
+        run: python3 scripts/package-site.py
+
       - name: Upload static site
         uses: actions/upload-pages-artifact@v5
         with:
-          path: .
+          path: dist
 
       - name: Deploy
         id: deployment

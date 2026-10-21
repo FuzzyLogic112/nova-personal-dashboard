@@ -3,3 +3,5 @@ qa-*.png
 Thumbs.db
 private-import/
 *.private.json
+node_modules/
+dist/

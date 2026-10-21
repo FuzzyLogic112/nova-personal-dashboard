@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>安装收藏夹同步 · NOVA</title><link rel="icon" href="./assets/icon.svg" type="image/svg+xml">
+<style>
+:root{color-scheme:dark;font-family:system-ui,"Microsoft YaHei",sans-serif;background:#0b0d0c;color:#f4f2ea}*{box-sizing:border-box}body{margin:0;padding:40px 24px}main{max-width:820px;margin:auto}nav{display:flex;align-items:center;gap:12px;margin-bottom:64px;font-size:14px;letter-spacing:3px}nav img{width:38px}nav a{margin-left:auto;color:#aab1a4;font-size:12px;letter-spacing:0;text-decoration:none}.kicker{font-size:11px;letter-spacing:3px;color:#d9ff63}h1{font-size:clamp(30px,6vw,46px);line-height:1.2;letter-spacing:-1px;max-width:650px}p{color:#a2aa9d;font-size:14px;line-height:1.9}.download{display:inline-flex;margin:22px 0 8px;background:#d9ff63;color:#1a220e;border-radius:12px;padding:15px 24px;text-decoration:none;font-size:14px;font-weight:700}.version{display:block;font-size:11px;color:#7d877a;margin-bottom:30px}.steps{list-style:none;margin:0;padding:0;counter-reset:step;display:grid;gap:12px}.steps li{counter-increment:step;display:flex;gap:18px;border:1px solid #2e352d;padding:22px;border-radius:18px;background:#141914}.steps li::before{content:counter(step,decimal-leading-zero);color:#d9ff63;font-size:12px;font-weight:700;padding-top:5px}h2{font-size:16px;margin:0 0 8px}.steps p{margin:0;font-size:13px}code{background:#252d23;border-radius:5px;padding:2px 6px;font-size:12px;color:#e3e8db;overflow-wrap:anywhere}.note{border-left:2px solid #a9c85c;padding-left:18px;margin:28px 0;font-size:12px}.fine{font-size:12px;margin-top:28px}a{color:#d9ff63}a:focus-visible{outline:2px solid #d9ff63;outline-offset:5px}footer{border-top:1px solid #252b24;margin-top:40px;padding-top:20px;font-size:11px;color:#798674}
+</style></head><body><main>
+<nav><img src="./assets/icon.svg" alt="NOVA"> NOVA <a href="./#bookmarks">返回工作台 ↗</a></nav>
+<span class="kicker">BOOKMARK SYNC · LOCAL ONLY</span><h1>收藏一次，<br>工作台自动跟上。</h1>
+<p>为这台电脑的 Edge / Chrome 安装配套扩展。新增、改名、移动、删除收藏后，工作台会自动更新；关闭工作台也没关系，下次打开会重新读取最新收藏。</p>
+<a class="download" href="./downloads/nova-bookmark-sync.zip" download="nova-bookmark-sync.zip">下载 NOVA 收藏夹同步扩展 ↓</a><span class="version">v1.0.0 · 免费开源 · 无需账号或服务器</span>
+<ol class="steps">
+<li><div><h2>下载并解压</h2><p>将压缩包解压到一个长期保留的文件夹，例如 <code>D:\NOVA\</code>。展开后会看到 <code>nova-bookmark-sync</code> 文件夹，里面有 <code>manifest.json</code>。安装后请保留该文件夹。</p></div></li>
+<li><div><h2>在浏览器中加载扩展</h2><p>在 Edge 地址栏输入 <code>edge://extensions</code>（Chrome 使用 <code>chrome://extensions</code>）。开启「开发人员模式」，点「加载解压缩的扩展」，选择包含 <code>manifest.json</code> 的 <code>nova-bookmark-sync</code> 文件夹。</p></div></li>
+<li><div><h2>打开工作台，确认已连接</h2><p>扩展安装后会打开工作台。在「收藏知识库」中看到「收藏夹自动同步已连接」与收藏数量，即已完成。若原工作台已打开，请刷新一次；有旧版缓存时按 <code>Ctrl + Shift + R</code>。</p></div></li>
+</ol>
+<p class="note">首次同步会在当前浏览器中备份原有工作台收藏。同步以浏览器收藏夹为准，不会修改浏览器收藏夹。可以随时「暂停同步」或「恢复同步前备份」。</p>
+<p class="fine">扩展只读取收藏夹，并向你的 <code>fuzzylogic112.github.io/nova-personal-dashboard/</code> 页面发送本地消息。不读取浏览历史、密码或 Cookie，也不上传收藏夹。只同步 HTTP / HTTPS 网页；浏览器内部页、文件地址和脚本书签会跳过。隐私模式不在此版本的支持范围内。</p>
+<p class="fine">如果未连接：确认扩展已启用、站点访问权限允许此工作台，然后刷新工作台并点击「检查连接」。扩展的「立即同步」表示已读取浏览器收藏；工作台中的同步时间表示已写入本地知识库。</p>
+<footer><a href="https://github.com/FuzzyLogic112/nova-personal-dashboard/tree/main/extension">查看扩展源码</a> · 此安装包仅适配你的 NOVA 地址。换浏览器、浏览器配置文件或电脑后，需要在对应环境重新安装。</footer>
+</main></body></html>

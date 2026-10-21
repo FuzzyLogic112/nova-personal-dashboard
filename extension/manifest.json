@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "NOVA 收藏夹同步",
+  "version": "1.0.0",
+  "description": "将此浏览器的收藏夹自动同步到你的 NOVA 工作台。仅本地处理，不读取浏览历史。",
+  "permissions": ["bookmarks", "storage"],
+  "host_permissions": ["https://fuzzylogic112.github.io/*"],
+  "background": { "service_worker": "background.js" },
+  "action": { "default_title": "NOVA 收藏夹同步", "default_popup": "popup.html" },
+  "content_scripts": [{
+    "matches": ["https://fuzzylogic112.github.io/nova-personal-dashboard/*"],
+    "js": ["shared.js", "content.js"],
+    "run_at": "document_idle",
+    "all_frames": false
+  }],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'none'; connect-src 'none'"
+  }
+}

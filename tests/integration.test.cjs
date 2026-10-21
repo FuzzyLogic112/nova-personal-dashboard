@@ -1,0 +1,53 @@
+const test=require('node:test');
+const assert=require('node:assert/strict');
+const {IDBFactory}=require('fake-indexeddb');
+const {runtime,page,sample,until}=require('./helpers.cjs');
+test('end-to-end: initial sync, add, rename, move, delete, pause, resume and backup restore',async()=>{
+  const rt=runtime(sample());
+  const original={id:'imported',title:'之前的手动收藏',url:'https://original.example/',path:[],category:'待整理'};
+  const p=await page(rt,{manual:[original]});
+  await until(()=>p.text('#bookmarkSyncStatus')==='收藏夹自动同步已连接');
+  assert.equal(p.document.querySelector('#bookmarkResults a').getAttribute('href'),'https://www.example.com/docs?from=library&utm_source=mine#part-2');
+  assert.equal((await p.store.read()).items[0].path.join('/'),'收藏夹栏/学习');
+  assert.equal(p.document.querySelector('#bookmarkImport').disabled,true);
+  const updated=sample('<img src=x onerror=alert(1)>');
+  updated[0].children[0].children[0].children.push({id:'4',title:'新增',url:'https://second.example/'});
+  rt.setTree(updated);rt.chrome.bookmarks.onCreated.fire('4',{});
+  await until(()=>p.text('#bookmarkTotal').startsWith('2 个'));
+  assert.equal(p.document.querySelectorAll('#bookmarkResults img').length,0);
+  assert.ok(p.text('#bookmarkResults').includes('<img src=x onerror=alert(1)>'));
+  p.click('#bookmarkSyncToggle');await until(()=>rt.data.enabled===false);
+  rt.setTree(sample('暂停期间修改'));rt.chrome.bookmarks.onChanged.fire('3',{});await rt.request('STATUS');
+  assert.ok(p.text('#bookmarkTotal').startsWith('2 个'));
+  p.click('#bookmarkSyncToggle');await until(()=>p.text('#bookmarkResults').includes('暂停期间修改'));
+  rt.setTree([{id:'0',children:[]}]);rt.chrome.bookmarks.onRemoved.fire('3',{});
+  await until(()=>p.text('#bookmarkTotal').startsWith('0 个'));
+  assert.ok(p.text('#bookmarkResults').includes('目前没有网页收藏'));
+  p.click('#bookmarkSyncRestore');await until(()=>p.text('#bookmarkResults').includes('之前的手动收藏'));
+  assert.equal(p.localStorage.getItem('nova.bookmark-sync.paused.v1'),'true');
+  await rt.request('SYNC');assert.ok(p.text('#bookmarkResults').includes('之前的手动收藏'));
+});
+test('reopen catches up changes made while dashboard was closed',async()=>{
+  const rt=runtime(sample());const db=new IDBFactory();const p=await page(rt,{indexedDB:db});
+  await until(()=>p.text('#bookmarkSyncStatus')==='收藏夹自动同步已连接');
+  rt.handlers.clear();rt.setTree(sample('关闭后新增版本'));
+  const reopened=await page(rt,{indexedDB:db,id:2});
+  await until(()=>reopened.text('#bookmarkResults').includes('关闭后新增版本'));
+});
+test('two open dashboards both render a snapshot, even when one has already stored it',async()=>{
+  const rt=runtime(sample());const db=new IDBFactory();
+  const one=await page(rt,{indexedDB:db,id:1});const two=await page(rt,{indexedDB:db,id:2});
+  await until(()=>one.text('#bookmarkResults').includes('Example')&&two.text('#bookmarkResults').includes('Example'));
+  rt.setTree(sample('同时更新'));rt.chrome.bookmarks.onChanged.fire('3',{});
+  await until(()=>one.text('#bookmarkResults').includes('同时更新')&&two.text('#bookmarkResults').includes('同时更新'));
+});
+test('popup resume also clears the page pause, and unknown page messages do not change data',async()=>{
+  const rt=runtime(sample());const p=await page(rt);await until(()=>p.text('#bookmarkSyncStatus')==='收藏夹自动同步已连接');
+  p.click('#bookmarkSyncToggle');await until(()=>rt.data.enabled===false);
+  rt.setTree(sample('弹窗恢复'));
+  await rt.request('SET_ENABLED',true,{id:rt.chrome.runtime.id,url:rt.chrome.runtime.getURL('popup.html')});
+  await until(()=>p.text('#bookmarkResults').includes('弹窗恢复'));
+  assert.equal(p.localStorage.getItem('nova.bookmark-sync.paused.v1'),'false');
+  p.window.emit('message',{source:{},origin:'https://evil.example',data:{channel:'nova-bookmark-sync-v1',direction:'extension',payload:{kind:'status',enabled:false}}});
+  assert.equal(p.text('#bookmarkSyncStatus'),'收藏夹自动同步已连接');
+});

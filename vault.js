@@ -1,8 +1,6 @@
 (() => {
   "use strict";
 
-  const DB_NAME = "nova-private-vault-v1";
-  const STORE_NAME = "bookmarks";
   const META_KEY = "nova.private-vault.meta.v1";
   const AI_USAGE_KEY = "nova.ai-usage.v1";
   const PAGE_SIZE = 12;
@@ -15,6 +13,23 @@
   let query = "";
   let page = 1;
   let metadata = loadMetadata();
+  const SYNC_CHANNEL = "nova-bookmark-sync-v1";
+  const SYNC_PAUSED_KEY = "nova.bookmark-sync.paused.v1";
+  const SYNC_CHANGED_KEY = "nova.bookmark-sync.changed.v1";
+  let syncState = null;
+  let hasSyncBackup = false;
+  let extensionConnected = false;
+  let extensionEnabled = true;
+  let syncError = "";
+  let writes = Promise.resolve();
+  let lastExtensionSeen = 0;
+  const queueVaultWrite = (task) => {
+    const next = writes.then(task, task);
+    writes = next.catch(() => {});
+    return next;
+  };
+  const syncPaused = () => localStorage.getItem(SYNC_PAUSED_KEY) === "true";
+  const signalVaultChange = () => localStorage.setItem(SYNC_CHANGED_KEY, `${Date.now()}-${Math.random()}`);
 
   function loadMetadata() {
     try {
@@ -43,44 +58,14 @@
     }, 2800);
   }
 
-  function openDatabase() {
-    return new Promise((resolve, reject) => {
-      const request = indexedDB.open(DB_NAME, 1);
-      request.addEventListener("upgradeneeded", () => {
-        const db = request.result;
-        if (db.objectStoreNames.contains(STORE_NAME)) return;
-        const store = db.createObjectStore(STORE_NAME, { keyPath: "id" });
-        store.createIndex("category", "category", { unique: false });
-        store.createIndex("url", "url", { unique: false });
-      });
-      request.addEventListener("success", () => resolve(request.result));
-      request.addEventListener("error", () => reject(request.error));
-    });
-  }
-
   async function readBookmarks() {
-    const db = await openDatabase();
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction(STORE_NAME, "readonly");
-      const request = transaction.objectStore(STORE_NAME).getAll();
-      request.addEventListener("success", () => resolve(request.result || []));
-      request.addEventListener("error", () => reject(request.error));
-      transaction.addEventListener("complete", () => db.close());
-    });
+    const saved = await NovaBookmarkStore.read();
+    syncState = saved.state;
+    hasSyncBackup = saved.hasBackup;
+    return saved.items;
   }
 
-  async function replaceBookmarks(items) {
-    const db = await openDatabase();
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction(STORE_NAME, "readwrite");
-      const store = transaction.objectStore(STORE_NAME);
-      store.clear();
-      items.forEach((item) => store.put(item));
-      transaction.addEventListener("complete", () => { db.close(); resolve(); });
-      transaction.addEventListener("error", () => { db.close(); reject(transaction.error); });
-      transaction.addEventListener("abort", () => { db.close(); reject(transaction.error); });
-    });
-  }
+  const replaceBookmarks = (items) => NovaBookmarkStore.replace(items);
 
   function canonicalUrl(value) {
     try {
@@ -129,13 +114,15 @@
   function normalizeBookmarks(rawItems) {
     const seen = new Set();
     return rawItems.map((item, index) => {
-      const url = canonicalUrl(item.url);
-      if (!url) return null;
+      const canonical = canonicalUrl(item.url);
+      if (!canonical) return null;
+      // Keep the actual destination intact: fragments and query parameters may be functional.
+      const url = String(item.url);
       const path = Array.isArray(item.path)
         ? item.path.map(String)
         : String(item.path || item.folder || "").split(/[\\/›>]/).filter(Boolean);
-      const duplicate = seen.has(url);
-      seen.add(url);
+      const duplicate = seen.has(canonical);
+      seen.add(canonical);
       return {
         id: String(item.id || `bookmark-${index}-${url}`),
         title: String(item.title || item.name || hostname(url)).trim().slice(0, 240),
@@ -212,6 +199,11 @@
 
   async function importPrivateFile(file) {
     if (!file) return;
+    if (extensionConnected && !syncPaused() && extensionEnabled) {
+      notify("请先暂停自动同步，再导入收藏夹。");
+      $("#privatePackFile").value = "";
+      return;
+    }
     try {
       const text = await file.text();
       let payload = null;
@@ -224,7 +216,12 @@
       const usageImported = importUsageFromPack(payload);
       if (!normalized.length && !usageImported) throw new Error("empty");
       if (normalized.length) {
-        await replaceBookmarks(normalized);
+        await queueVaultWrite(() => {
+          if (extensionConnected && !syncPaused() && extensionEnabled) throw new Error("请先暂停同步。");
+          return replaceBookmarks(normalized);
+        });
+        syncState = null;
+        signalVaultChange();
         bookmarks = normalized;
         category = "全部";
         query = "";
@@ -233,6 +230,7 @@
       metadata.lastPackAt = new Date().toISOString();
       saveMetadata();
       renderBookmarks();
+      renderSync();
       const skipped = Math.max(0, safeNumber(payload?.sourceSummary?.urlNodes) - normalized.length);
       notify(normalized.length
         ? `已在当前浏览器整理 ${normalized.length} 个收藏网站${skipped ? `，跳过 ${skipped} 个内部项` : ""}`
@@ -352,10 +350,10 @@
 
   function renderBookmarks() {
     const counts = bookmarks.reduce((map, item) => map.set(item.category, (map.get(item.category) || 0) + 1), new Map());
-    $("#bookmarkTotal").textContent = bookmarks.length ? `${bookmarks.length} 个网站 · IndexedDB` : "等待导入";
+    $("#bookmarkTotal").textContent = bookmarks.length || syncState ? `${bookmarks.length} 个网站 · 仅本地` : "等待导入";
     $("#bookmarkCategoryCount").textContent = String(counts.size);
     $("#bookmarkDuplicateCount").textContent = String(bookmarks.filter((item) => item.duplicate).length);
-    $("#bookmarkStorageState").textContent = bookmarks.length ? `${bookmarks.length} 条仅存于此浏览器` : "尚未载入私有数据";
+    $("#bookmarkStorageState").textContent = bookmarks.length || syncState ? `${bookmarks.length} 条仅存于此浏览器` : "尚未载入私有数据";
 
     const rail = $("#bookmarkCategories");
     rail.replaceChildren();
@@ -377,7 +375,9 @@
     if (!bookmarks.length) {
       const empty = document.createElement("div");
       empty.className = "vault-empty";
-      empty.innerHTML = '<svg class="icon"><use href="#i-bookmark"></use></svg><strong>导入你的浏览器收藏夹</strong><p>选择本机生成的 NOVA 私有包、Edge/Chrome Bookmarks JSON，或浏览器导出的 HTML。网址不会上传到服务器。</p>';
+      empty.innerHTML = syncState
+        ? '<strong>浏览器收藏夹已同步，目前没有网页收藏</strong><p>添加一个网页收藏后，这里会自动更新。内部页面与脚本书签不会导入。</p>'
+        : '<svg class="icon"><use href="#i-bookmark"></use></svg><strong>连接你的浏览器收藏夹</strong><p>安装 NOVA 同步扩展后自动更新，也可以手动导入书签 HTML 或 JSON。网址不会上传到服务器。</p>';
       results.append(empty);
       $("#bookmarkPagination").hidden = true;
       $("#bookmarkRecallCount").textContent = "0";
@@ -416,6 +416,119 @@
     notify("收藏知识库已导出");
   }
 
+  function requestSync(command = "SYNC", enabled) {
+    window.postMessage({ channel: SYNC_CHANNEL, direction: "page", command, enabled }, location.origin);
+  }
+
+  function renderSync() {
+    const paused = syncPaused() || !extensionEnabled;
+    const label = $("#bookmarkSyncStatus");
+    const details = $("#bookmarkSyncDetails");
+    const button = $("#bookmarkSyncToggle");
+    label.textContent = syncError ? "同步需要处理" : paused ? "自动同步已暂停" :
+      extensionConnected ? (syncState ? "收藏夹自动同步已连接" : "正在读取浏览器收藏夹…") : "等待连接 NOVA 同步扩展";
+    label.dataset.state = syncError ? "error" : paused ? "paused" : extensionConnected ? "connected" : "waiting";
+    details.textContent = syncError || (syncState
+      ? `${syncState.count} 个网页收藏 · 最近确认 ${new Date(syncState.syncedAt).toLocaleString("zh-CN")}${syncState.skipped ? ` · ${syncState.skipped} 个内部/特殊链接未导入` : ""}`
+      : "安装一次，后续自动跟进收藏夹变化。首次同步会保存现有收藏的备份。");
+    button.textContent = paused ? "恢复自动同步" : "暂停同步";
+    button.hidden = !extensionConnected && !syncState && !paused;
+    $("#bookmarkSyncNow").textContent = extensionConnected ? "立即同步" : "检查连接";
+    $("#bookmarkSyncNow").disabled = paused;
+    $("#bookmarkSyncRestore").hidden = !hasSyncBackup;
+    $("#bookmarkImport").disabled = extensionConnected && !paused;
+    $("#bookmarkImport").title = extensionConnected && !paused ? "暂停自动同步后可手动导入" : "导入书签 HTML 或 JSON";
+  }
+
+  function setupSync() {
+    window.addEventListener("message", (event) => {
+      if (event.source !== window || event.origin !== location.origin || window.top !== window) return;
+      const message = event.data;
+      if (message?.channel !== SYNC_CHANNEL || message.direction !== "extension") return;
+      const incoming = message.payload;
+      if (!incoming || !["snapshot", "status", "error"].includes(incoming.kind)) return;
+      extensionConnected = true;
+      lastExtensionSeen = Date.now();
+      syncError = incoming.kind === "error" ? String(incoming.message || "同步失败，请重试。").slice(0, 200) : "";
+      if (typeof incoming.enabled === "boolean") extensionEnabled = incoming.enabled;
+      if (incoming.settingChanged === true && typeof incoming.enabled === "boolean") {
+        localStorage.setItem(SYNC_PAUSED_KEY, String(!incoming.enabled));
+      }
+      renderSync();
+      if (incoming.kind !== "snapshot" || syncPaused() || !extensionEnabled) return;
+      void queueVaultWrite(async () => {
+        if (syncPaused()) return;
+        NovaBookmarkStore.validate(incoming);
+        const normalized = normalizeBookmarks(incoming.items);
+        if (normalized.length !== incoming.items.length) throw new Error("部分收藏格式无效，原数据保持不变。");
+        const result = await NovaBookmarkStore.apply(incoming, normalized);
+        const previousRevision = syncState?.revision;
+        syncState = result.state;
+        if (result.changed || (!result.stale && previousRevision !== incoming.revision)) {
+          bookmarks = normalized;
+          hasSyncBackup = true;
+          if (category !== "全部" && !bookmarks.some((item) => item.category === category)) category = "全部";
+          renderBookmarks();
+        }
+        if (result.stale) { bookmarks = await readBookmarks(); renderBookmarks(); }
+        if (result.changed) signalVaultChange();
+        renderSync();
+      }).catch((error) => {
+        syncError = error.message || "保存失败，请检查浏览器存储空间。";
+        renderSync();
+      });
+    });
+    $("#bookmarkSyncNow").addEventListener("click", () => {
+      syncError = "";
+      requestSync();
+      renderSync();
+      window.setTimeout(() => {
+        if (!extensionConnected) notify("尚未检测到扩展。安装后请刷新工作台，再检查连接。");
+      }, 1800);
+    });
+    $("#bookmarkSyncToggle").addEventListener("click", () => {
+      const resume = syncPaused() || !extensionEnabled;
+      localStorage.setItem(SYNC_PAUSED_KEY, String(!resume));
+      syncError = "";
+      requestSync("SET_ENABLED", resume);
+      renderSync();
+    });
+    $("#bookmarkSyncRestore").addEventListener("click", async () => {
+      if (!window.confirm("暂停自动同步，并恢复首次同步前的工作台收藏？浏览器收藏夹不会改变，之后可重新开启同步。")) return;
+      localStorage.setItem(SYNC_PAUSED_KEY, "true");
+      requestSync("SET_ENABLED", false);
+      try {
+        await queueVaultWrite(async () => {
+          const restored = await NovaBookmarkStore.restore();
+          if (!restored) throw new Error("未找到同步前备份。");
+          bookmarks = restored;
+          syncState = null;
+          signalVaultChange();
+          category = "全部";
+          page = 1;
+          renderBookmarks();
+        });
+        notify("已暂停同步，并恢复同步前的收藏。");
+      } catch (error) { notify(error.message); }
+      renderSync();
+    });
+    window.addEventListener("storage", (event) => {
+      if (event.key === SYNC_PAUSED_KEY || event.key === SYNC_CHANGED_KEY) {
+        void queueVaultWrite(async () => { bookmarks = await readBookmarks(); renderBookmarks(); renderSync(); });
+      }
+    });
+    const refresh = () => {
+      if (document.hidden) return;
+      if (lastExtensionSeen && Date.now() - lastExtensionSeen > 90000) extensionConnected = false;
+      requestSync(syncPaused() ? "STATUS" : "SYNC");
+      renderSync();
+    };
+    document.addEventListener("visibilitychange", refresh);
+    window.addEventListener("pageshow", refresh);
+    window.setInterval(refresh, 60000);
+    refresh();
+  }
+
   function setupEvents() {
     $("#bookmarkImport").addEventListener("click", () => $("#privatePackFile").click());
     $("#privatePackFile").addEventListener("change", (event) => importPrivateFile(event.target.files[0]));
@@ -439,6 +552,7 @@
       notify("当前浏览器无法打开本地收藏知识库");
     }
     renderBookmarks();
+    setupSync();
   }
 
   document.addEventListener("DOMContentLoaded", init, { once: true });

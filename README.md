@@ -25,10 +25,23 @@
 - Open‑Meteo 无密钥天气，可由用户主动授权定位；
 - Codex / Claude 额度中心，可在浏览器端解析官方状态文本或 JSON 快照；
 - 收藏知识库，可一次导入 NOVA 私有包、Edge/Chrome Bookmarks JSON 或书签 HTML，并在本机完成分类、搜索、分页和点击召回；
+- [NOVA 收藏夹同步扩展](https://fuzzylogic112.github.io/nova-personal-dashboard/sync-setup.html)：同一电脑、同一 Edge / Chrome 配置文件内自动同步收藏夹的新增、改名、移动与删除，支持暂停、手动重试和首次同步前备份恢复；
 - 响应式布局、移动端 Dock、PWA 与离线壳缓存；
 - 无账号、无埋点、无第三方统计。
 
 ## 本地运行
+
+### 自动同步收藏夹
+
+打开[扩展安装页](https://fuzzylogic112.github.io/nova-personal-dashboard/sync-setup.html)，下载并解压安装包，在浏览器扩展管理页加载 `nova-bookmark-sync` 目录。刷新工作台后，「收藏知识库」会显示连接状态与同步时间。安装包固定接入本仓库的 GitHub Pages 地址；其他部署需自行调整 `extension/manifest.json` 和 `extension/shared.js` 的目标地址。
+
+数据单向复制到当前浏览器的 IndexedDB，不上传 GitHub，不修改浏览器收藏。首次同步会保存原有工作台收藏的本地备份；同步期间请先暂停再手动导入。仅同步 HTTP/HTTPS 网页，内部页面和脚本书签会跳过。扩展及权限说明见 [extension/README.md](./extension/README.md)。
+
+### 开发与测试
+
+`npm ci && npm test` 运行隔离测试；`python3 scripts/package-site.py` 生成 `dist/` 站点与扩展 ZIP。GitHub Pages 发布前会自动运行测试与打包。
+
+### 运行网页
 
 这是一个无构建步骤的静态站点。不要直接双击 HTML，使用任意本地静态服务器：
 

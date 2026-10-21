@@ -8,7 +8,7 @@
   <title>NOVA · 个人工作台</title>
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./assets/icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./styles.css?v=6">
+  <link rel="stylesheet" href="./styles.css?v=7">
 </head>
 <body>
   <a class="skip-link" href="#main-content">跳到主要内容</a>
@@ -193,6 +193,10 @@
               <button class="button-primary compact-button" id="bookmarkImport" type="button"><svg class="icon"><use href="#i-upload"></use></svg>导入私有数据包</button>
             </div>
           </div>
+          <div class="bookmark-sync" aria-label="收藏夹自动同步">
+            <div class="bookmark-sync-copy"><strong id="bookmarkSyncStatus" data-state="waiting" role="status" aria-live="polite">等待连接 NOVA 同步扩展</strong><p id="bookmarkSyncDetails">安装一次，后续自动跟进收藏夹变化。首次同步会保存现有收藏的备份。</p></div>
+            <div class="bookmark-sync-actions"><button id="bookmarkSyncNow" class="button-ghost compact-button" type="button">检查连接</button><button id="bookmarkSyncToggle" class="button-ghost compact-button" type="button" hidden>暂停同步</button><a class="button-ghost compact-button" href="./sync-setup.html" target="_blank" rel="noopener">安装同步扩展</a><button id="bookmarkSyncRestore" class="button-ghost compact-button" type="button" hidden>恢复同步前备份</button></div>
+          </div>
           <div class="vault-strip">
             <div class="vault-search"><svg class="icon"><use href="#i-search"></use></svg><label class="sr-only" for="bookmarkSearch">搜索收藏夹</label><input id="bookmarkSearch" type="search" placeholder="搜索标题、域名、原文件夹…" autocomplete="off"><kbd>/</kbd></div>
             <div class="vault-stat"><span>分类</span><strong id="bookmarkCategoryCount">0</strong></div>
@@ -364,6 +368,7 @@
   <div class="toast-region" id="toastRegion" role="status" aria-live="polite"></div>
 
   <script src="./app.js?v=6" defer></script>
-  <script src="./vault.js?v=6" defer></script>
+  <script src="./bookmark-store.js?v=7" defer></script>
+  <script src="./vault.js?v=7" defer></script>
 </body>
 </html>

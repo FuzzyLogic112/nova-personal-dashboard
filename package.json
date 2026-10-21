@@ -1,0 +1,26 @@
+{
+  "name": "nova-personal-dashboard",
+  "version": "1.0.0",
+  "description": "NOVA local-first personal dashboard and bookmark sync extension",
+  "scripts": {
+    "test": "node --test tests/*.test.cjs",
+    "build": "python3 scripts/package-site.py"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/FuzzyLogic112/nova-personal-dashboard.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/FuzzyLogic112/nova-personal-dashboard/issues"
+  },
+  "homepage": "https://github.com/FuzzyLogic112/nova-personal-dashboard#readme",
+  "devDependencies": {
+    "fake-indexeddb": "^6.2.6",
+    "linkedom": "^0.18.13"
+  },
+  "private": true
+}

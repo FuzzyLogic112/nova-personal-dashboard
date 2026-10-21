@@ -1,0 +1,8 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>NOVA 收藏夹同步</title><link rel="stylesheet" href="popup.css"></head>
+<body><header><span class="logo">N</span><div><strong>NOVA</strong><small>收藏夹同步 · 仅此浏览器</small></div><span class="badge">LOCAL</span></header>
+<main><h1>让收藏夹自动跟上你。</h1><p>新增、改名、移动与删除，会自动更新到工作台。</p>
+<section><label for="enabled">自动同步 <input id="enabled" type="checkbox" role="switch"></label><p id="status" role="status" aria-live="polite">正在连接…</p><small id="details"></small></section>
+<button id="sync" type="button">立即同步</button><button id="open" type="button" class="secondary">打开 NOVA 工作台</button>
+<footer>仅复制收藏夹，不修改浏览器收藏。只连接你的 NOVA 页面，不读取历史、密码或 Cookie。关闭工作台后，再打开会读取最新收藏。</footer></main>
+<script src="shared.js"></script><script src="popup.js"></script></body></html>
