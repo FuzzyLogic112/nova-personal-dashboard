@@ -1,4 +1,4 @@
-const CACHE = "nova-shell-v8";
+const CACHE = "nova-shell-v9";
 const SHELL = ["./", "./index.html", "./styles.css", "./time.js", "./app.js", "./vault.js", "./bookmark-store.js", "./sync-setup.html", "./manifest.webmanifest", "./assets/icon.svg"];
 
 self.addEventListener("install", (event) => {

@@ -23,7 +23,10 @@
     return `${year}-${pad(month)}-${pad(day)}`;
   }
   function format(value, options) {
-    return new Date(value).toLocaleString("zh-CN", { ...options, timeZone: zone, hourCycle: "h23" });
+    const fields = options || { year: "numeric", month: "numeric", day: "numeric",
+      hour: "2-digit", minute: "2-digit", second: "2-digit" };
+    // Use the explicit formatter; browser add-ons can override Date.toLocaleString.
+    return new Intl.DateTimeFormat("zh-CN", { ...fields, timeZone: zone, hourCycle: "h23" }).format(new Date(value));
   }
   function toInput(value) {
     if (!value || !Number.isFinite(new Date(value).getTime())) return "";

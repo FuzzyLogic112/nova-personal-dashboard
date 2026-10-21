@@ -15,6 +15,15 @@ test('Beijing display and date inputs agree on an instant regardless of the host
   assert.equal(time.fromInput('2026-10-21T15:44Z'), null);
 });
 
+test('browser overrides of Date locale methods cannot override the chosen display zone', () => {
+  const original = Date.prototype.toLocaleString;
+  try {
+    Date.prototype.toLocaleString = () => '07:44';
+    assert.equal(time.format('2026-10-21T07:44:00Z', { hour: '2-digit', minute: '2-digit' }), '15:44');
+    assert.ok(time.format('2026-10-21T07:44:00Z').includes('15:44:00'));
+  } finally { Date.prototype.toLocaleString = original; }
+});
+
 function clockPage(instant) {
   let now = Date.parse(instant);
   class Clock extends Date {
