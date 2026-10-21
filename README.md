@@ -4,6 +4,8 @@
 
 一个本地优先、无需登录、可直接部署到 GitHub Pages 的个人工作台。
 
+此个人工作台统一使用北京时间（Asia/Shanghai）。时钟、问候语、日历、每日活动与收藏同步时间不受浏览器默认时区影响；AI 额度表单中的重置时间也按北京时间输入。
+
 [在线体验](https://fuzzylogic112.github.io/nova-personal-dashboard/) · [使用此模板创建自己的 NOVA](https://github.com/new?template_name=nova-personal-dashboard&template_owner=FuzzyLogic112) · [完整部署指南](./DEPLOY.md)
 
 ## 部署自己的专属网站

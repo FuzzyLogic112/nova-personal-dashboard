@@ -262,7 +262,7 @@
     const stat = metadata.bookmarkStats?.[item.url];
     if (!stat) return 0;
     const recencyDays = stat.last ? Math.max(0, (Date.now() - new Date(stat.last).getTime()) / 86400000) : 99;
-    return safeNumber(stat.count) * 2 + Math.max(0, 8 - recencyDays) + safeNumber(stat.hours?.[new Date().getHours()]) * 3;
+    return safeNumber(stat.count) * 2 + Math.max(0, 8 - recencyDays) + safeNumber(stat.hours?.[NovaTime.parts().hour]) * 3;
   }
 
   function visibleBookmarks() {
@@ -280,7 +280,8 @@
     stat.count += 1;
     stat.last = new Date().toISOString();
     if (!Array.isArray(stat.hours) || stat.hours.length !== 24) stat.hours = Array(24).fill(0);
-    stat.hours[new Date().getHours()] = safeNumber(stat.hours[new Date().getHours()]) + 1;
+    const hour = NovaTime.parts().hour;
+    stat.hours[hour] = safeNumber(stat.hours[hour]) + 1;
     stats[item.url] = stat;
     saveMetadata();
   }
@@ -429,7 +430,7 @@
       extensionConnected ? (syncState ? "收藏夹自动同步已连接" : "正在读取浏览器收藏夹…") : "等待连接 NOVA 同步扩展";
     label.dataset.state = syncError ? "error" : paused ? "paused" : extensionConnected ? "connected" : "waiting";
     details.textContent = syncError || (syncState
-      ? `${syncState.count} 个网页收藏 · 最近确认 ${new Date(syncState.syncedAt).toLocaleString("zh-CN")}${syncState.skipped ? ` · ${syncState.skipped} 个内部/特殊链接未导入` : ""}`
+      ? `${syncState.count} 个网页收藏 · 最近确认 ${NovaTime.format(syncState.syncedAt)}（北京时间）${syncState.skipped ? ` · ${syncState.skipped} 个内部/特殊链接未导入` : ""}`
       : "安装一次，后续自动跟进收藏夹变化。首次同步会保存现有收藏的备份。");
     button.textContent = paused ? "恢复自动同步" : "暂停同步";
     button.hidden = !extensionConnected && !syncState && !paused;

@@ -45,6 +45,7 @@ async function page(rt, {manual=[], indexedDB=new IDBFactory(), id=1, storageDat
   window.top=window;
   const location = {href:rt.sender.url,origin:'https://fuzzylogic112.github.io'};
   const context = vm.createContext({document,window,location,localStorage,indexedDB,console,URL,Date,Blob,Math,DOMParser:require('linkedom').DOMParser,CustomEvent:require('linkedom').CustomEvent});
+  vm.runInContext(read('time.js'),context);
   vm.runInContext(read('bookmark-store.js'),context);
   if (manual.length) await context.NovaBookmarkStore.replace(manual);
   vm.runInContext(read('vault.js'),context);

@@ -27,12 +27,7 @@
   };
 
   const makeId = () => globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-  const localDateKey = (date = new Date()) => {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, "0");
-    const d = String(date.getDate()).padStart(2, "0");
-    return `${y}-${m}-${d}`;
-  };
+  const localDateKey = NovaTime.dateKey;
 
   const defaultState = () => ({
     version: 1,
@@ -102,6 +97,7 @@
   let memoSaveTimer = null;
   let timerInterval = null;
   let commandIndex = 0;
+  let displayedDate = "";
 
   const $ = (selector, root = document) => root.querySelector(selector);
   const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -206,7 +202,7 @@
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return "未提供重置时间";
     const difference = date.getTime() - Date.now();
-    const when = date.toLocaleString("zh-CN", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false });
+    const when = NovaTime.format(date, { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
     if (difference <= 0) return `${when} · 已到重置时间`;
     const hours = Math.ceil(difference / 3600000);
     const countdown = hours < 24 ? `${hours} 小时后` : `${Math.ceil(hours / 24)} 天后`;
@@ -254,11 +250,7 @@
   }
 
   function toLocalDateTime(value) {
-    if (!value) return "";
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return "";
-    const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-    return local.toISOString().slice(0, 16);
+    return NovaTime.toInput(value);
   }
 
   function fillUsageDialog() {
@@ -303,7 +295,7 @@
     if (!Number.isFinite(usedPercent) || usedPercent < 0 || usedPercent > 100) return toast("请填写 0 到 100 之间的已用额度");
     updateUsageProvider(provider, {
       usedPercent,
-      resetAt: normalizeResetAt($("#usageResetInput").value),
+      resetAt: NovaTime.fromInput($("#usageResetInput").value),
       plan: $("#usagePlanInput").value.trim().slice(0, 30) || null,
       updatedAt: new Date().toISOString()
     });
@@ -331,26 +323,31 @@
 
   function updateClock() {
     const now = new Date();
+    const { year, month, day, weekday, hour, minute, second } = NovaTime.parts(now);
     const weekdays = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"];
-    $("#topDate").textContent = `${String(now.getMonth() + 1).padStart(2, "0")}月${String(now.getDate()).padStart(2, "0")}日 · ${weekdays[now.getDay()]}`;
-    $("#topTime").textContent = now.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit", hour12: false });
-    const hour = now.getHours();
+    $("#topDate").textContent = `${String(month).padStart(2, "0")}月${String(day).padStart(2, "0")}日 · ${weekdays[weekday]}`;
+    $("#topTime").textContent = NovaTime.format(now, { hour: "2-digit", minute: "2-digit" });
     $("#greeting").textContent = hour < 6 ? "夜深了" : hour < 11 ? "上午好" : hour < 14 ? "中午好" : hour < 18 ? "下午好" : "晚上好";
 
-    const start = new Date(now.getFullYear(), 0, 1);
-    const end = new Date(now.getFullYear() + 1, 0, 1);
-    const yearProgress = Math.floor(((now - start) / (end - start)) * 100);
+    const start = Date.UTC(year, 0, 1);
+    const end = Date.UTC(year + 1, 0, 1);
+    const calendarTime = Date.UTC(year, month - 1, day, hour, minute, second);
+    const yearProgress = Math.floor(((calendarTime - start) / (end - start)) * 100);
     $("#dayOfYear").textContent = `YEAR ${yearProgress}%`;
-    $("#footerYear").textContent = now.getFullYear();
+    $("#footerYear").textContent = year;
 
-    const dayStart = new Date(now); dayStart.setHours(8, 0, 0, 0);
-    const dayEnd = new Date(now); dayEnd.setHours(22, 0, 0, 0);
-    const progress = Math.max(0, Math.min(100, Math.round(((now - dayStart) / (dayEnd - dayStart)) * 100)));
+    const progress = Math.max(0, Math.min(100, Math.round(((hour * 60 + minute + second / 60 - 480) / 840) * 100)));
     const ring = $("#dayProgressRing");
     ring.style.setProperty("--progress", `${progress}%`);
     ring.dataset.label = `${progress}%`;
     ring.textContent = "";
     $("#dayProgressText").textContent = `${progress}%`;
+    const today = localDateKey(now);
+    if (displayedDate !== today) {
+      displayedDate = today;
+      renderCalendar();
+      renderRhythm();
+    }
   }
 
   function updateProfile() {
@@ -483,15 +480,14 @@
   }
 
   function renderCalendar() {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth();
+    const { year, month: monthNumber, day: today } = NovaTime.parts();
+    const month = monthNumber - 1;
     const monthNames = ["一月", "二月", "三月", "四月", "五月", "六月", "七月", "八月", "九月", "十月", "十一月", "十二月"];
     $("#calendarTitle").textContent = monthNames[month];
     $("#calendarYear").textContent = year;
-    const firstOffset = (new Date(year, month, 1).getDay() + 6) % 7;
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const daysPrev = new Date(year, month, 0).getDate();
+    const firstOffset = (new Date(Date.UTC(year, month, 1)).getUTCDay() + 6) % 7;
+    const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+    const daysPrev = new Date(Date.UTC(year, month, 0)).getUTCDate();
     const grid = $("#calendarGrid");
     grid.replaceChildren();
     for (let cell = 0; cell < 42; cell += 1) {
@@ -506,7 +502,7 @@
         node.classList.add("muted");
       } else {
         day = cell - firstOffset + 1;
-        if (day === now.getDate()) {
+        if (day === today) {
           node.classList.add("today");
           node.setAttribute("aria-current", "date");
         }
@@ -514,8 +510,8 @@
       node.textContent = day;
       grid.append(node);
     }
-    const yearEnd = new Date(year + 1, 0, 1);
-    const remaining = Math.ceil((yearEnd - new Date(year, month, now.getDate())) / 86400000) - 1;
+    const yearEnd = Date.UTC(year + 1, 0, 1);
+    const remaining = Math.ceil((yearEnd - Date.UTC(year, month, today)) / 86400000) - 1;
     $("#yearRemaining").textContent = `今年还剩 ${remaining} 天`;
   }
 
@@ -525,8 +521,7 @@
     const days = [];
     const now = new Date();
     for (let offset = 6; offset >= 0; offset -= 1) {
-      const day = new Date(now);
-      day.setDate(now.getDate() - offset);
+      const day = new Date(now.getTime() - offset * 86400000);
       days.push(day);
     }
     const values = days.map((day) => Number(state.activity[localDateKey(day)]) || 0);
@@ -540,7 +535,7 @@
       bar.style.height = `${Math.max(5, (values[index] / max) * 118)}px`;
       bar.dataset.value = values[index];
       const label = document.createElement("span");
-      label.textContent = labels[day.getDay()];
+      label.textContent = labels[NovaTime.parts(day).weekday];
       wrap.append(bar, label);
       chart.append(wrap);
     });
@@ -958,11 +953,10 @@
     const bootstrappedUsage = consumeUsageBootstrap();
     applyAppearance();
     updateProfile();
+    displayedDate = "";
     updateClock();
     renderTasks();
     renderLinks();
-    renderCalendar();
-    renderRhythm();
     renderAiUsage();
     $("#memoInput").value = state.memo || "";
     $("#memoCount").textContent = `${(state.memo || "").length} / 1200`;

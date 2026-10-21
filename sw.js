@@ -1,5 +1,5 @@
-const CACHE = "nova-shell-v7";
-const SHELL = ["./", "./index.html", "./styles.css", "./app.js", "./vault.js", "./bookmark-store.js", "./sync-setup.html", "./manifest.webmanifest", "./assets/icon.svg"];
+const CACHE = "nova-shell-v8";
+const SHELL = ["./", "./index.html", "./styles.css", "./time.js", "./app.js", "./vault.js", "./bookmark-store.js", "./sync-setup.html", "./manifest.webmanifest", "./assets/icon.svg"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(SHELL)).then(() => self.skipWaiting()));

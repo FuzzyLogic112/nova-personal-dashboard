@@ -6,7 +6,7 @@ from zipfile import ZipFile, ZipInfo, ZIP_DEFLATED
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "dist"
 OUT.mkdir(exist_ok=True)
-for name in ["index.html", "styles.css", "app.js", "vault.js", "bookmark-store.js",
+for name in ["index.html", "styles.css", "time.js", "app.js", "vault.js", "bookmark-store.js",
              "sync-setup.html", "sw.js", "manifest.webmanifest", ".nojekyll"]:
     shutil.copy2(ROOT / name, OUT / name)
 shutil.copytree(ROOT / "assets", OUT / "assets", dirs_exist_ok=True)

@@ -85,7 +85,8 @@
         <div class="local-badge"><span class="pulse-dot"></span>本地优先 · 数据留在此设备</div>
         <div class="top-meta">
           <span id="topDate">09月09日 · 星期三</span>
-          <strong id="topTime">09:41</strong>
+          <strong id="topTime" title="北京时间 · UTC+8" aria-label="北京时间">--:--</strong>
+          <span class="timezone-label">北京时间</span>
           <button class="avatar-button" id="avatarSettings" type="button" aria-label="打开个人设置"><span id="avatarLetter">旅</span></button>
         </div>
       </header>
@@ -354,7 +355,7 @@
         <button class="parse-button" id="usageParse" type="button"><svg class="icon"><use href="#i-spark"></use></svg>端侧解析</button>
         <div class="usage-manual-grid">
           <label><span>已用额度 %</span><input id="usageUsedInput" type="number" min="0" max="100" step="1" placeholder="例如 69" required></label>
-          <label><span>重置时间（可选）</span><input id="usageResetInput" type="datetime-local"></label>
+          <label><span>重置时间（北京时间，可选）</span><input id="usageResetInput" type="datetime-local"></label>
         </div>
         <label><span>计划名称（可选）</span><input id="usagePlanInput" type="text" maxlength="30" placeholder="例如 Plus · 7 天窗口"></label>
         <p class="field-note"><svg class="icon"><use href="#i-lock"></use></svg><span>所有解析都在浏览器内完成。公开静态网页无法安全读取账号私有接口，因此不会要求你粘贴 Cookie 或 Token。</span></p>
@@ -367,8 +368,9 @@
   <input type="file" id="privatePackFile" accept="application/json,text/html" hidden>
   <div class="toast-region" id="toastRegion" role="status" aria-live="polite"></div>
 
-  <script src="./app.js?v=6" defer></script>
+  <script src="./time.js?v=8" defer></script>
+  <script src="./app.js?v=8" defer></script>
   <script src="./bookmark-store.js?v=7" defer></script>
-  <script src="./vault.js?v=7" defer></script>
+  <script src="./vault.js?v=8" defer></script>
 </body>
 </html>
