@@ -974,7 +974,7 @@
     window.setInterval(renderAiUsage, 60000);
     timerInterval = window.setInterval(timerTick, 250);
     if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
-      navigator.serviceWorker.register("./sw.js").catch(() => {});
+      navigator.serviceWorker.register("./sw.js", { updateViaCache: "none" }).catch(() => {});
     }
   }
 
